@@ -1,0 +1,32 @@
+{
+  "name": "reminder-bot",
+  "version": "1.0.0",
+  "description": "the sceduling functionality for a certain reminderBot",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NickBerilov/reminderBot.git"
+  },
+  "keywords": [
+    "bot",
+    "schedule",
+    "reminder"
+  ],
+  "author": "NickBerilov",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/NickBerilov/reminderBot/issues"
+  },
+  "homepage": "https://github.com/NickBerilov/reminderBot#readme",
+  "dependencies": {
+    "body-parser": "^1.17.2",
+    "express": "^4.15.3",
+    "mongodb": "^2.2.29",
+    "node-schedule": "^1.2.3",
+    "request": "^2.81.0"
+  }
+}
