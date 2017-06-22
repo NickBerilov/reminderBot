@@ -19,3 +19,7 @@ exports.init = function (callback) {
 exports.remindersCollection = function () {
   return cachedDb.collection('reminders');
 };
+
+exports.failedCollection = function () {
+  return cachedDb.collection('failed');
+};
