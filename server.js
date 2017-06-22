@@ -3,8 +3,6 @@ const bodyParser = require('body-parser');
 const config = require('./config');
 const remind = require('./remind');
 
-remind.init();
-
 app.use(bodyParser.json());
 
 app.post('/remind', remind.scheduleReminder);
