@@ -38,6 +38,7 @@ function moveReminderToFailed(id) {
 
 function messageHuman(id, result, repeat) {
   console.log('DEBUG: messageHuman', repeat, result.userId);
+  let mapUrl = `https://www.google.com/maps/dir/${encodeLocation(result.origin)}/${encodeLocation(result.destination)}`;
   return request.post({
     url: 'https://api.motion.ai/1.0/messageHuman',
     json: true,
@@ -50,11 +51,11 @@ function messageHuman(id, result, repeat) {
         cardTitle: 'Google Maps',
         cardSubtitle: 'Find local businesses, view maps and get driving directions in Google Maps',
         cardImage: getMapImageUrl(result.origin, result.destination),
-        cardLink: 'https://www.google.com/maps/dir',
+        cardLink: mapUrl,
         buttons: [{
           buttonText: 'See routes',
           buttonType: 'url',
-          target: `https://www.google.com/maps/dir/${encodeLocation(result.origin)}/${encodeLocation(result.destination)}`,
+          target: mapUrl,
         }]
       }],
     },
