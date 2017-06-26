@@ -11,6 +11,10 @@ function encodeLocation(location) {
   return encodeURIComponent(location.replace(/\s/g, '+'))
 }
 
+function getMapImageUrl(origin, destination) {
+  return `https://maps.googleapis.com/maps/api/staticmap?size=400x300&markers=${encodeLocation(origin)}&markers=${encodeLocation(destination)}&key=${config.mapKey}`
+}
+
 function deleteReminderById(id) {
   console.log('DEBUG: deleteReminderById', id);
   return db.remindersCollection().deleteOne({_id: id})
@@ -41,14 +45,14 @@ function messageHuman(id, result, repeat) {
       to: result.userId,
       bot: config.botId,
       key: config.apiKey,
-      msg: `Here's a map for your trip from ${result.origin} to ${result.destination}`,
+      msg: `Here are the directions for your trip from ${result.origin} to ${result.destination}`,
       cards: [{
-        cardTitle: 'TestMessageHumanTitle',
-        cardSubtitle: 'TestMessageHumanSubtitle',
-        cardImage: 'https://www.motion.ai/images/logo_molecules_gradient.png',
-        cardLink: 'https://www.motion.ai',
+        cardTitle: 'Google Maps',
+        cardSubtitle: 'Find local businesses, view maps and get driving directions in Google Maps',
+        cardImage: getMapImageUrl(result.origin, result.destination),
+        cardLink: 'https://www.google.com/maps/dir',
         buttons: [{
-          buttonText: 'Google Direction Map',
+          buttonText: 'See routes',
           buttonType: 'url',
           target: `https://www.google.com/maps/dir/${encodeLocation(result.origin)}/${encodeLocation(result.destination)}`,
         }]
