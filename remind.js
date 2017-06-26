@@ -42,10 +42,12 @@ function messageHuman(id, result, repeat) {
       bot: config.botId,
       key: config.apiKey,
       msg: `Here's a map for your trip from ${result.origin} to ${result.destination}`,
-      globalButtons: [{
-        buttonText: 'Google Direction Map',
-        buttonType: 'url',
-        target: `https://www.google.com/maps/dir/${encodeLocation(result.origin)}/${encodeLocation(result.destination)}`
+      cards: [{
+        buttons: [{
+          buttonText: 'Google Direction Map',
+          buttonType: 'url',
+          target: `https://www.google.com/maps/dir/${encodeLocation(result.origin)}/${encodeLocation(result.destination)}`,
+        }],
       }],
     },
   }, (err, response, body) => {
