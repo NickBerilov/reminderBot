@@ -43,11 +43,15 @@ function messageHuman(id, result, repeat) {
       key: config.apiKey,
       msg: `Here's a map for your trip from ${result.origin} to ${result.destination}`,
       cards: [{
+        cardTitle: 'TestMessageHumanTitle',
+        cardSubtitle: 'TestMessageHumanSubtitle',
+        cardImage: 'https://www.motion.ai/images/logo_molecules_gradient.png',
+        cardLink: 'https://www.motion.ai',
         buttons: [{
           buttonText: 'Google Direction Map',
           buttonType: 'url',
           target: `https://www.google.com/maps/dir/${encodeLocation(result.origin)}/${encodeLocation(result.destination)}`,
-        }],
+        }]
       }],
     },
   }, (err, response, body) => {
