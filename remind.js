@@ -3,6 +3,14 @@ const db = require('./mongoConnection');
 const request = require('request');
 const config = require('./config');
 
+function getTime(time, offset = 0) {
+  return new Date(Number(time) + offset);
+}
+
+function encodeLocation(location) {
+  return encodeURIComponent(location.replace(/\s/g, '+'))
+}
+
 function deleteReminderById(id) {
   console.log('DEBUG: deleteReminderById', id);
   return db.remindersCollection().deleteOne({_id: id})
@@ -33,7 +41,12 @@ function messageHuman(id, result, repeat) {
       to: result.userId,
       bot: config.botId,
       key: config.apiKey,
-      msg: `<a href=https://www.google.com/maps/dir/${result.origin}/${result.destination}>Google Direction Map</a>`,
+      msg: `Here's a map for your trip from ${result.origin} to ${result.destination}`,
+      globalButtons: [{
+        buttonText: 'Google Direction Map',
+        buttonType: 'url',
+        target: `https://www.google.com/maps/dir/${encodeLocation(result.origin)}/${encodeLocation(result.destination)}`
+      }],
     },
   }, (err, response, body) => {
     if (err || body.err){
@@ -51,7 +64,7 @@ db.init(() => {
   return db.remindersCollection().find().toArray()
     .then(results => {
       results.forEach(result => {
-        let reminderTime = new Date(result.time) > new Date() ? new Date(result.time) : new Date(Date.now() + 60000);
+        let reminderTime = getTime(result.time) > new Date() ? getTime(result.time) : getTime(Date.now() + 60000);
         schedule.scheduleJob(reminderTime, messageHuman.bind(null, result._id, result, true));
       });
     })
@@ -60,16 +73,20 @@ db.init(() => {
 
 function scheduleReminder(req, res, next) {
   console.log('DEBUG: scheduleReminder');
-  let body = {
-    userId: req.body.userId,
-    origin: req.body.origin,
-    destination: req.body.destination,
-    time: req.body.time,
+  const body = req.body;
+  if (!body.userId || !body.origin || !body.destination || !body.time) {
+    return res.status(400).send({ message: 'Invalid body' });
+  }
+  let reminder = {
+    userId: body.userId,
+    origin: body.origin,
+    destination: body.destination,
+    time: body.time,
   };
-  return db.remindersCollection().insertOne(body)
+  return db.remindersCollection().insertOne(reminder)
     .then(result => {
       res.end();
-      schedule.scheduleJob(new Date(req.body.time), messageHuman.bind(null, result.ops[0]._id, body, true));
+      schedule.scheduleJob(getTime(body.time), messageHuman.bind(null, result.ops[0]._id, reminder, true));
     })
     .catch(next);
 }
