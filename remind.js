@@ -1,6 +1,7 @@
 const schedule = require('node-schedule');
-const db = require('./mongoConnection');
 const request = require('request');
+const logger = require('./logger');
+const db = require('./mongoConnection');
 const config = require('./config');
 
 function getTime(time, offset = 0) {
@@ -16,28 +17,28 @@ function getMapImageUrl(origin, destination) {
 }
 
 function deleteReminderById(id) {
-  console.log('DEBUG: deleteReminderById', id);
+  logger.debug('deleteReminderById', id);
   return db.remindersCollection().deleteOne({_id: id})
     .then(() => {
-      console.log(id, 'successfully deleted');
+      logger.info(id, 'successfully deleted');
     })
-    .catch(console.error);
+    .catch(logger.error);
 }
 
 function moveReminderToFailed(id) {
-  console.log('DEBUG: moveReminderToFailed', id);
+  logger.debug('moveReminderToFailed', id);
   return db.remindersCollection().findOneAndDelete({_id: id})
     .then(result => {
       return db.failedCollection().insertOne(result.value)
         .then(() => {
-          console.log(id, 'successfully moved to failed collection');
+          logger.info(id, 'successfully moved to failed collection');
         });
     })
-    .catch(console.error);
+    .catch(logger.error);
 }
 
 function messageHuman(id, result, repeat) {
-  console.log('DEBUG: messageHuman', repeat, result.userId);
+  logger.debug('messageHuman', repeat, result.userId);
   let mapUrl = `https://www.google.com/maps/dir/${encodeLocation(result.origin)}/${encodeLocation(result.destination)}`;
   return request.post({
     url: 'https://api.motion.ai/1.0/messageHuman',
@@ -61,7 +62,7 @@ function messageHuman(id, result, repeat) {
     },
   }, (err, response, body) => {
     if (err || body.err){
-      console.error(err || body.err);
+      logger.error(err || body.err);
       if (repeat) return messageHuman(id, result, false);
       else return moveReminderToFailed(id);
     }
@@ -71,7 +72,7 @@ function messageHuman(id, result, repeat) {
 }
 
 db.init(() => {
-  console.log('DEBUG: init');
+  logger.debug('init');
   return db.remindersCollection().find().toArray()
     .then(results => {
       results.forEach(result => {
@@ -79,11 +80,11 @@ db.init(() => {
         schedule.scheduleJob(reminderTime, messageHuman.bind(null, result._id, result, true));
       });
     })
-    .catch(console.error);
+    .catch(logger.error);
 });
 
 function scheduleReminder(req, res, next) {
-  console.log('DEBUG: scheduleReminder');
+  logger.debug('scheduleReminder');
   const body = req.body;
   if (!body.userId || !body.origin || !body.destination || !body.time) {
     return res.status(400).send({ message: 'Invalid body' });

@@ -1,4 +1,5 @@
 const MongoClient = require('mongodb').MongoClient;
+const logger = require('./logger');
 const config = require('./config');
 
 let cachedDb;
@@ -6,11 +7,11 @@ let cachedDb;
 exports.init = function (callback) {
   MongoClient.connect(config.mongoUrl, function(err, db) {
     if(err) {
-      console.error('Mongo DB connection failed', {error: err});
+      logger.error('Mongo DB connection failed', {error: err});
     } else {
       cachedDb = db;
       exports.db = cachedDb;
-      console.log('Mongo DB: connected!');
+      logger.info('Mongo DB: connected!');
       callback();
     }
   });
