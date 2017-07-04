@@ -8,7 +8,12 @@ const googleMapsClient = require('@google/maps').createClient({
 });
 
 function getTime(time, offset = 0) {
-  return new Date(Number(time) + offset);
+  let date = new Date(Number(time) + offset);
+  return {
+    startTime: date,
+    hour: date.getHours(),
+    minute: date.getMinutes(),
+  };
 }
 
 function encodeLocation(location) {
@@ -17,15 +22,6 @@ function encodeLocation(location) {
 
 function getMapImageUrl(origin, destination) {
   return `https://maps.googleapis.com/maps/api/staticmap?size=400x300&markers=${encodeLocation(origin)}&markers=${encodeLocation(destination)}&key=${config.mapKey}`
-}
-
-function deleteReminderById(id) {
-  logger.debug('deleteReminderById', id);
-  return db.remindersCollection().deleteOne({_id: id})
-    .then(() => {
-      logger.info(id, 'successfully deleted');
-    })
-    .catch(logger.error);
 }
 
 function moveReminderToFailed(id) {
@@ -87,7 +83,7 @@ function messageHuman(id, result, repeat) {
     }, (err, response, body) => {
       if (err || body.err) handleMessageHumanError(err, id, result, repeat);
 
-      deleteReminderById(id);
+      logger.info('message successful', result.userId);
     });
   });
 }
@@ -97,8 +93,7 @@ db.init(() => {
   return db.remindersCollection().find().toArray()
     .then(results => {
       results.forEach(result => {
-        let reminderTime = getTime(result.time) > new Date() ? getTime(result.time) : getTime(Date.now() + 60000);
-        schedule.scheduleJob(reminderTime, messageHuman.bind(null, result._id, result, true));
+        schedule.scheduleJob(getTime(result.time), messageHuman.bind(null, result._id, result, true));
       });
     })
     .catch(logger.error);
