@@ -4,4 +4,5 @@ module.exports = {
   apiKey: process.env.API_KEY,
   botId: process.env.BOT_ID,
   mapKey: process.env.MAP_KEY,
+  directionsKey: process.env.DIRECTIONS_KEY
 };

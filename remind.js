@@ -3,6 +3,9 @@ const request = require('request');
 const logger = require('./logger');
 const db = require('./mongoConnection');
 const config = require('./config');
+const googleMapsClient = require('@google/maps').createClient({
+  key: config.directionsKey
+});
 
 function getTime(time, offset = 0) {
   return new Date(Number(time) + offset);
@@ -37,37 +40,55 @@ function moveReminderToFailed(id) {
     .catch(logger.error);
 }
 
+function getRouteDuration(result, callback) {
+  logger.debug('getRouteDuration', result.userId);
+  return googleMapsClient.directions({
+    origin: result.origin,
+    destination: result.destination,
+    departure_time: result.time,
+  }, function (err, data) {
+    let duration = data.json.routes[0].legs[0].duration_in_traffic.text || data.json.routes[0].legs[0].duration.text;
+    return callback(err, duration);
+  });
+}
+
+function handleMessageHumanError (err, id, result, repeat) {
+  logger.error(err);
+  if (repeat) return messageHuman(id, result, false);
+  else return moveReminderToFailed(id);
+}
+
 function messageHuman(id, result, repeat) {
   logger.debug('messageHuman', repeat, result.userId);
   let mapUrl = `https://www.google.com/maps/dir/${encodeLocation(result.origin)}/${encodeLocation(result.destination)}`;
-  return request.post({
-    url: 'https://api.motion.ai/1.0/messageHuman',
-    json: true,
-    body: {
-      to: result.userId,
-      bot: config.botId,
-      key: config.apiKey,
-      msg: `Here are the directions for your trip from ${result.origin} to ${result.destination}`,
-      cards: [{
-        cardTitle: 'Google Maps',
-        cardSubtitle: 'Find local businesses, view maps and get driving directions in Google Maps',
-        cardImage: getMapImageUrl(result.origin, result.destination),
-        cardLink: mapUrl,
-        buttons: [{
-          buttonText: 'See routes',
-          buttonType: 'url',
-          target: mapUrl,
-        }]
-      }],
-    },
-  }, (err, response, body) => {
-    if (err || body.err){
-      logger.error(err || body.err);
-      if (repeat) return messageHuman(id, result, false);
-      else return moveReminderToFailed(id);
-    }
+  return getRouteDuration(result, function (err, duration) {
+    if (err) handleMessageHumanError(err, id, result, repeat);
 
-    deleteReminderById(id);
+    return request.post({
+      url: 'https://api.motion.ai/1.0/messageHuman',
+      json: true,
+      body: {
+        to: result.userId,
+        bot: config.botId,
+        key: config.apiKey,
+        msg: `Here are the directions for your trip from ${result.origin} to ${result.destination}. You will need ${duration} to get there.`,
+        cards: [{
+          cardTitle: 'Google Maps',
+          cardSubtitle: 'Find local businesses, view maps and get driving directions in Google Maps',
+          cardImage: getMapImageUrl(result.origin, result.destination),
+          cardLink: mapUrl,
+          buttons: [{
+            buttonText: 'See routes',
+            buttonType: 'url',
+            target: mapUrl,
+          }]
+        }],
+      },
+    }, (err, response, body) => {
+      if (err || body.err) handleMessageHumanError(err, id, result, repeat);
+
+      deleteReminderById(id);
+    });
   });
 }
 
@@ -97,8 +118,12 @@ function scheduleReminder(req, res, next) {
   };
   return db.remindersCollection().insertOne(reminder)
     .then(result => {
-      res.end();
-      schedule.scheduleJob(getTime(body.time), messageHuman.bind(null, result.ops[0]._id, reminder, true));
+      getRouteDuration(reminder, function(err, duration) {
+        if (err) return next(err);
+
+        res.json({ duration });
+        schedule.scheduleJob(getTime(body.time), messageHuman.bind(null, result.ops[0]._id, reminder, true));
+      });
     })
     .catch(next);
 }

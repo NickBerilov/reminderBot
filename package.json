@@ -23,6 +23,7 @@
   },
   "homepage": "https://github.com/NickBerilov/reminderBot#readme",
   "dependencies": {
+    "@google/maps": "^0.4.2",
     "body-parser": "^1.17.2",
     "express": "^4.15.3",
     "mongodb": "^2.2.29",
